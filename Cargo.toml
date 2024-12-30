@@ -16,6 +16,18 @@ hyper = "1.5.2"
 serde = { version = "1.0.217", features = ["derive"] }
 tokio = { version = "1.42.0", features = ["macros", "rt-multi-thread"] }
 
+[dependencies.sqlx]
+version = "0.8.2"
+default-features = false
+features = [
+  "runtime-tokio-rustls",
+  "macros",
+  "postgres",
+  "uuid",
+  "chrono",
+  "migrate"
+]
+
 [dev-dependencies]
 http-body-util = "0.1.2"
 reqwest = "0.12.11"

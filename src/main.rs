@@ -1,4 +1,4 @@
-use zero2prod::app;
+use zero2prod::startup::app;
 
 #[tokio::main]
 async fn main() {

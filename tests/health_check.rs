@@ -13,7 +13,7 @@ use tower::ServiceExt;
 /// to be able to `.collect()` the body.
 #[tokio::test]
 async fn health_check_oneshot() {
-    let app = zero2prod::app();
+    let app = zero2prod::startup::app();
 
     let resp = app
         .oneshot(
@@ -99,7 +99,9 @@ async fn spawn_app() -> SocketAddr {
     let addr = listener.local_addr().unwrap();
 
     let _ = tokio::spawn(async move {
-        axum::serve(listener, zero2prod::app()).await.unwrap();
+        axum::serve(listener, zero2prod::startup::app())
+            .await
+            .unwrap();
     });
 
     addr
