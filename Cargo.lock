@@ -1530,6 +1530,7 @@ dependencies = [
  "http-body-util",
  "hyper",
  "reqwest",
+ "serde",
  "tokio",
  "tower",
 ]
