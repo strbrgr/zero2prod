@@ -4,18 +4,19 @@ use axum::{
 };
 use http_body_util::BodyExt;
 use reqwest::Client;
-use sqlx::{Connection, PgConnection};
+use sqlx::{Connection, PgConnection, PgPool};
 use std::net::SocketAddr;
 use tower::ServiceExt;
-use zero2prod::configuration::{self, get_configuration};
+use zero2prod::configuration::get_configuration;
 
-/// Oneshot test
-///
-/// This requires tower to provide `.oneshot` as wel as http_body_util
-/// to be able to `.collect()` the body.
 #[tokio::test]
 async fn health_check_oneshot() {
-    let app = zero2prod::startup::app();
+    let configuration = get_configuration().expect("Failed to read configuration.");
+    let connection_pool = PgPool::connect(&configuration.database.connection_string())
+        .await
+        .expect("Failed to connect to Postgres");
+
+    let app = zero2prod::startup::app(connection_pool);
 
     let resp = app
         .oneshot(
@@ -112,8 +113,13 @@ async fn spawn_app() -> SocketAddr {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
 
+    let configuration = get_configuration().expect("Failed to read configuration.");
+    let connection_pool = PgPool::connect(&configuration.database.connection_string())
+        .await
+        .expect("Failed to connect to Postgres");
+
     let _ = tokio::spawn(async move {
-        axum::serve(listener, zero2prod::startup::app())
+        axum::serve(listener, zero2prod::startup::app(connection_pool))
             .await
             .unwrap();
     });
