@@ -15,7 +15,7 @@ async fn main() {
     let address = format!("127.0.0.1:{}", &configuration.application_port);
     let listener = tokio::net::TcpListener::bind(address).await.unwrap();
     let connection_pool =
-        PgPool::connect(&configuration.database.connection_string().expose_secret())
+        PgPool::connect(configuration.database.connection_string().expose_secret())
             .await
             .expect("Failed to connect to Postgres");
     axum::serve(listener, app(connection_pool)).await.unwrap();
