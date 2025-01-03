@@ -22,4 +22,3 @@ async fn main() {
             .expect("Failed to connect to Postgres");
     axum::serve(listener, app(connection_pool)).await.unwrap();
 }
-
