@@ -1,3 +1,6 @@
 Working on the book Zero 2 Production with Axum.
 
-Learned:
+## Learned:
+### Renaming Branches
+### Tracing instrument
+
