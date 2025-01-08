@@ -16,6 +16,17 @@ pub struct SignUp {
     name: String,
 }
 
+impl TryFrom<SignUp> for NewSubscriber {
+    type Error = String;
+
+    fn try_from(value: SignUp) -> Result<Self, Self::Error> {
+        let name = SubscriberName::parse(value.name)?;
+        let email = SubscriberEmail::parse(value.email)?;
+
+        Ok(NewSubscriber { email, name })
+    }
+}
+
 #[tracing::instrument(
     name = "Adding a subscriber",
     skip(state, sign_up),
@@ -28,17 +39,10 @@ pub async fn subscribe(
     State(state): State<AppState>,
     Form(sign_up): Form<SignUp>,
 ) -> impl IntoResponse {
-    let name = match SubscriberName::parse(sign_up.name) {
-        Ok(name) => name,
-        Err(_) => return (StatusCode::BAD_REQUEST, "Error parsing name"),
+    let new_subscriber = match sign_up.try_into() {
+        Ok(sign_up) => sign_up,
+        Err(_) => return (StatusCode::BAD_REQUEST, "error parsing subscriber"),
     };
-
-    let email = match SubscriberEmail::parse(sign_up.email) {
-        Ok(email) => email,
-        Err(_) => return (StatusCode::BAD_REQUEST, "Error parsing email"),
-    };
-
-    let new_subscriber = NewSubscriber { email, name };
     match insert_subscriber(&state.db, &new_subscriber).await {
         Ok(_) => (StatusCode::OK, "subscription successful"),
         Err(_) => (
