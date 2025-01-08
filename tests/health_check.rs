@@ -167,7 +167,7 @@ async fn subscribe_returns_a_422_when_data_is_missing() {
 }
 
 #[tokio::test]
-async fn subscribe_returns_a_200_when_fields_are_present_but_missing() {
+async fn subscribe_returns_a_400_for_invalid_data() {
     // Arrange
     let (app_address, _) = spawn_app().await;
 
@@ -189,13 +189,11 @@ async fn subscribe_returns_a_200_when_fields_are_present_but_missing() {
             .expect("Failed to execute request.");
         // Assert
         assert_eq!(
-            StatusCode::OK,
+            StatusCode::BAD_REQUEST,
             response.status().as_u16(),
             // Additional customised error message on test failure
             "The API did not fail with 400 Bad Request when the payload was {}.",
             error_message
         );
     }
-
-    //TODO: Delete created database
 }
