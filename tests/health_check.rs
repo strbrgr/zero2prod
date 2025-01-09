@@ -11,6 +11,7 @@ use tower::ServiceExt;
 use uuid::Uuid;
 use zero2prod::{
     configuration::{get_configuration, DatabaseSettings},
+    email_client::EmailClient,
     telemetry::{get_subscriber, init_subscriber},
 };
 
@@ -37,8 +38,14 @@ async fn spawn_app() -> (SocketAddr, PgPool) {
     let connection_pool = configure_database(&configuration.database).await;
     let server_pool = connection_pool.clone();
 
+    let sender_email = configuration
+        .email_client
+        .sender()
+        .expect("Invalid sender email address.");
+    let email_client = EmailClient::new(configuration.email_client.base_url, sender_email);
+
     let _ = tokio::spawn(async move {
-        axum::serve(listener, zero2prod::startup::app(server_pool))
+        axum::serve(listener, zero2prod::startup::app(server_pool, email_client))
             .await
             .unwrap();
     });
@@ -73,7 +80,12 @@ async fn health_check_oneshot() {
     configuration.database.database_name = Uuid::new_v4().to_string();
     let connection_pool = configure_database(&configuration.database).await;
 
-    let app = zero2prod::startup::app(connection_pool);
+    let sender_email = configuration
+        .email_client
+        .sender()
+        .expect("Invalid sender email address.");
+    let email_client = EmailClient::new(configuration.email_client.base_url, sender_email);
+    let app = zero2prod::startup::app(connection_pool, email_client);
 
     let resp = app
         .oneshot(

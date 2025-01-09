@@ -1,4 +1,7 @@
-use crate::routes::{health_check, subscribe};
+use crate::{
+    email_client::{self, EmailClient},
+    routes::{health_check, subscribe},
+};
 use axum::{
     extract::Request,
     routing::{get, post},
@@ -11,10 +14,14 @@ use tracing::Level;
 #[derive(Clone)]
 pub struct AppState {
     pub db: PgPool,
+    pub connection_pool: EmailClient,
 }
 
-pub fn app(pool: PgPool) -> Router {
-    let state = AppState { db: pool };
+pub fn app(pool: PgPool, email_client: EmailClient) -> Router {
+    let state = AppState {
+        db: pool,
+        connection_pool: email_client,
+    };
 
     Router::new()
         .route("/health_check", get(health_check))

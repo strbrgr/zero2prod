@@ -154,13 +154,61 @@ We pulled in the secrecy crate and defined the password as a Secret. For the pro
 We make use of different `yaml` configuration files where we set a `ssl_required` flag which will later be read out
 
 ### Chapter 6 - Rejecting invalid Subscribers 
-#### What does _defense in depth_ stand for?
+
+#### What does defense in depth stand for?
+Defense in depth stands for a multi-layer approach in defending against a various malicious attacks.
+
 #### How should we validate our name input?
+We want to make sure that it is not empty, below a certain length (256 graphemes), and that it does not include certain symbols.
+
 #### What do we mean by local and global approach?
+Local approach talks about the function level. What are the inputs that need to be validated at that level. 
+Global approach goes further and takes all of the application in. So when we talk about validation we would way more checks to make with a local approach.
+
 #### How do we make sure that we don't have to check form.name for validity every time it is being used?
-#### How can we solve for the issue of having to repeat a is_valid(String) function everywhere?
+We use the incoming string and run it through a parser which will return a type of some validated string.
+
 #### What is a Tuple Struct and how does it look?
+Lightweight data structure with unnamed fields: `struct SubscriberName(String)`
+
 #### What are Graphemes?
+Has to do with characters and unicode representation of them. I don't need to dig deeper right now.
+
+#### What is type-driven development?
+The practice of having a strong type system from which we derive our development work. It includes putting most of the logic of your program into your types so that bugs and errors can be caught at type-check time instead of runtime.
+
+#### Explain the new-type-pattern
+Using a Tuple Struct with a single field to make an opaque wrapper for a type. This is an abstraction and can help with controlling the implementation details. It allows us to share implementation details between types while precisely controlling the interface.
+
+#### Why should `String` in `struct SubscriberName(String)` not be marked as public?
+If it is public than anyone would have access to it and could manipulate it.
+
+#### What is the proper workaround, how can we enable the caller to read the value without the power to mutate?
+We implemented a `as_ref` function on the struct. 
+
+#### How should we handle recoverable errors?
+Never with a panic, those should be handled with the `Result` type.
+
+#### Explain how rusts result type is better than exception handling in a language like c# / .net?
+In other languages we have no guarantee that exceptions do not happen. Rust is clear about the intent and forces you to be specific in your return type.
+
+#### What is the issue with writing a test case that checks for `bob@gmail.com` being valid?
+That only checks that this email address is valid. All other ones could still be invalid.
+
+#### Explain property based testing
+Randomly generating different inputs and figuring out if our implemenation displays a certain property.
+
+#### What are our options with property based testing?
+Generating random testdata with `fake` and using `quickcheck`.
+
+#### What is quickcheck?
+A crate that randomly generates matching inputs and decreases the input size over time so that figuring out your bugs becomes more streamlined.
+
+#### How can we make parsing of the incoming form-data better?
+We create a struct and implement `try_from` for this struct. Within that function we handle all necessary cases and return a Result.
+
+#### Why should we use `try_from` and `try_into` whenever we can?
+To be clear about our intent and to communicate to other developers. Both are established patterns so it is easy for other to pick up on them.
 
 
 ### Tidbits
@@ -169,3 +217,6 @@ Axum returns `StatusCode::UNPROCESSABLE_ENTITY` whereas actix-web `StatusCode::B
 
 #### `error: error with configuration: relative URL without a base` when running `sqlx migrate run`
 This happened at the end of chapter 5 when we tried to migrate the new database URL. I forgot to wrap that URL in double quotes.
+
+#### How to display printed information when running unit tests
+`cargo test -- --nocapture`
