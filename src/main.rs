@@ -22,7 +22,9 @@ async fn main() {
         .email_client
         .sender()
         .expect("Invalid sender email address.");
-    let email_client = EmailClient::new(configuration.email_client.base_url, sender_email);
+    let base_url =
+        reqwest::Url::parse(&configuration.email_client.base_url).expect("Could not parse url");
+    let email_client = EmailClient::new(base_url, sender_email);
     axum::serve(listener, app(connection_pool, email_client))
         .await
         .unwrap();

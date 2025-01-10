@@ -42,7 +42,9 @@ async fn spawn_app() -> (SocketAddr, PgPool) {
         .email_client
         .sender()
         .expect("Invalid sender email address.");
-    let email_client = EmailClient::new(configuration.email_client.base_url, sender_email);
+    let base_url =
+        reqwest::Url::parse(&configuration.email_client.base_url).expect("Could not parse url");
+    let email_client = EmailClient::new(base_url, sender_email);
 
     let _ = tokio::spawn(async move {
         axum::serve(listener, zero2prod::startup::app(server_pool, email_client))
@@ -84,7 +86,10 @@ async fn health_check_oneshot() {
         .email_client
         .sender()
         .expect("Invalid sender email address.");
-    let email_client = EmailClient::new(configuration.email_client.base_url, sender_email);
+
+    let base_url =
+        reqwest::Url::parse(&configuration.email_client.base_url).expect("Could not parse url");
+    let email_client = EmailClient::new(base_url, sender_email);
     let app = zero2prod::startup::app(connection_pool, email_client);
 
     let resp = app
