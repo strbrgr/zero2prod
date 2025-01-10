@@ -1,4 +1,5 @@
 use reqwest::{Client, Url};
+use serde::Serialize;
 
 use crate::domain::SubscriberEmail;
 
@@ -25,9 +26,25 @@ impl EmailClient {
         text_content: &str,
     ) -> Result<(), String> {
         let url = self.base_url.join("/email").expect("Could not parse url");
-        let builder = self.http_client.post(url);
+        let request_body = SendEmailRequest {
+            from: self.sender.as_ref().to_owned(),
+            to: recipient.as_ref().to_owned(),
+            subject: subject.to_owned(),
+            html_body: html_content.to_owned(),
+            text_body: text_content.to_owned(),
+        };
+        let builder = self.http_client.post(url).json(&request_body);
         Ok(())
     }
+}
+
+#[derive(Serialize)]
+struct SendEmailRequest {
+    from: String,
+    to: String,
+    subject: String,
+    html_body: String,
+    text_body: String,
 }
 
 #[cfg(test)]
@@ -36,7 +53,7 @@ mod tests {
     use crate::email_client::EmailClient;
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::lorem::en::{Paragraph, Sentence};
-    use fake::{Fake, Faker};
+    use fake::Fake;
     use wiremock::matchers::any;
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
