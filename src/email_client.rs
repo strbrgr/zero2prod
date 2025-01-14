@@ -13,11 +13,13 @@ pub struct EmailClient {
 }
 
 impl EmailClient {
-    pub fn new(base_url: Url, sender: SubscriberEmail, authorization_token: SecretString) -> Self {
-        let http_client = Client::builder()
-            .timeout(std::time::Duration::from_secs(10))
-            .build()
-            .unwrap();
+    pub fn new(
+        base_url: Url,
+        sender: SubscriberEmail,
+        authorization_token: SecretString,
+        timeout: std::time::Duration,
+    ) -> Self {
+        let http_client = Client::builder().timeout(timeout).build().unwrap();
         Self {
             http_client,
             base_url,
@@ -72,7 +74,6 @@ mod tests {
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::lorem::en::{Paragraph, Sentence};
     use fake::{Fake, Faker};
-    use reqwest::Url;
     use wiremock::matchers::{any, header, header_exists, method, path};
     use wiremock::{Mock, MockServer, Request, ResponseTemplate};
 
@@ -90,11 +91,16 @@ mod tests {
         Paragraph(1..10).fake()
     }
 
-    fn email_client(uri: &String) -> EmailClient {
+    fn email_client(uri: &str) -> EmailClient {
         let sender = SubscriberEmail::parse(SafeEmail().fake()).unwrap();
         let base_url = reqwest::Url::parse(uri).expect("Could not parse url");
         let auth_token: String = Faker.fake();
-        EmailClient::new(base_url, sender, auth_token.into())
+        EmailClient::new(
+            base_url,
+            sender,
+            auth_token.into(),
+            std::time::Duration::from_millis(200),
+        )
     }
 
     impl wiremock::Match for SendEmailBodyMatcher {
