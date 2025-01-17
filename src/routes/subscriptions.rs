@@ -7,6 +7,7 @@ use uuid::Uuid;
 
 use crate::{
     domain::{NewSubscriber, SubscriberEmail, SubscriberName},
+    email_client::EmailClient,
     startup::AppState,
 };
 
@@ -51,14 +52,7 @@ pub async fn subscribe(
         ),
     };
 
-    if state
-        .email_client
-        .send_email(
-            new_subscriber.email,
-            "Welcome!",
-            "Welcome to our newsletter!",
-            "Welcome to our newsletter!",
-        )
+    if send_confirmation_email(&state.email_client, new_subscriber)
         .await
         .is_err()
     {
@@ -68,6 +62,30 @@ pub async fn subscribe(
         );
     }
     (StatusCode::OK, "subscription successful")
+}
+
+#[tracing::instrument(
+    name = "Sending confirmation link to new subscriber",
+    skip(email_client, new_subscriber)
+)]
+pub async fn send_confirmation_email(
+    email_client: &EmailClient,
+    new_subscriber: NewSubscriber,
+) -> Result<(), reqwest::Error> {
+    let confirmation_link = "https://no-domain.com/subscriptions/confirm";
+
+    let html_body = format!(
+        "Welcome to our newsletter!<br />\
+                Click <a href=\"{}\">here</a> to confirm your subscription.",
+        confirmation_link
+    );
+    let plain_body = format!(
+        "Welcome to our newsletter!\nVisit {} to confirm your subscription.",
+        confirmation_link
+    );
+    email_client
+        .send_email(new_subscriber.email, "Welcome!", &html_body, &plain_body)
+        .await
 }
 
 #[tracing::instrument(

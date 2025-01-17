@@ -5,6 +5,8 @@ use wiremock::{
     Mock, ResponseTemplate,
 };
 
+// Validates external behavior with email service. Needs to mock out the Email Server
+// Happy Path
 #[tokio::test]
 async fn subscribe_returns_a_200_for_valid_form_data() {
     // Arrange
@@ -32,6 +34,8 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
     //TODO: Delete created database
 }
 
+// Focus on the scenario where form data is incomplete
+// Request should fail before an email service is even being called
 #[tokio::test]
 async fn subscribe_returns_a_422_when_data_is_missing() {
     // Arrange
@@ -57,6 +61,8 @@ async fn subscribe_returns_a_422_when_data_is_missing() {
     }
 }
 
+// Focus on the scenario where form data is incomplete
+// Request should fail before an email service is even being called
 #[tokio::test]
 async fn subscribe_returns_a_400_for_invalid_data() {
     // Arrange
@@ -98,5 +104,22 @@ async fn subscribe_sends_a_confirmation_email_for_valid_data() {
     // Act
     test_app.post_subscriptions(body.into()).await;
     // Assert
-    // Mock asserts on drop
+    // Get first intercepted request
+    let email_request = &test_app.email_server.received_requests().await.unwrap()[0];
+    let body: serde_json::Value = serde_json::from_slice(&email_request.body).unwrap();
+
+    // Closure that takes in the body as string and uses Linkify to return link or panic
+    let get_link = |s: &str| {
+        let links: Vec<_> = linkify::LinkFinder::new()
+            .links(s)
+            .filter(|l| *l.kind() == linkify::LinkKind::Url)
+            .collect();
+        assert_eq!(links.len(), 1);
+        links[0].as_str().to_owned()
+    };
+
+    let html_link = get_link(body["HtmlBody"].as_str().unwrap());
+    let text_link = get_link(body["TextBody"].as_str().unwrap());
+
+    assert_eq!(html_link, text_link);
 }
