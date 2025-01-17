@@ -2,6 +2,7 @@ use once_cell::sync::Lazy;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use std::net::SocketAddr;
 use uuid::Uuid;
+use wiremock::MockServer;
 use zero2prod::{
     configuration::{get_configuration, DatabaseSettings},
     startup::Application,
@@ -11,6 +12,19 @@ use zero2prod::{
 pub struct TestApp {
     pub address: SocketAddr,
     pub connection_pool: PgPool,
+    pub email_server: MockServer,
+}
+
+impl TestApp {
+    pub async fn post_subscriptions(&self, body: String) -> reqwest::Response {
+        reqwest::Client::new()
+            .post(format!("http://{}/subscriptions", &self.address))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
 }
 
 static TRACING: Lazy<()> = Lazy::new(|| {
@@ -27,9 +41,15 @@ static TRACING: Lazy<()> = Lazy::new(|| {
 
 pub async fn spawn_app() -> TestApp {
     Lazy::force(&TRACING);
-    let mut configuration = get_configuration().expect("Failed to read configuration.");
-    configuration.database.database_name = Uuid::new_v4().to_string();
-    configuration.application.port = 0u16;
+    let email_server = MockServer::start().await;
+    let configuration = {
+        let mut c = get_configuration().expect("Failed to read configuration.");
+        // TODO: Are these still needed?
+        c.database.database_name = Uuid::new_v4().to_string();
+        c.application.port = 0u16;
+        c.email_client.base_url = email_server.uri();
+        c
+    };
 
     let app = Application::build(configuration.clone()).await.unwrap();
     let address = app.address();
@@ -41,6 +61,7 @@ pub async fn spawn_app() -> TestApp {
     TestApp {
         address,
         connection_pool,
+        email_server,
     }
 }
 

@@ -1,5 +1,9 @@
 use crate::helpers::spawn_app;
 use axum::http::StatusCode;
+use wiremock::{
+    matchers::{method, path},
+    Mock, ResponseTemplate,
+};
 
 #[tokio::test]
 async fn subscribe_returns_a_200_for_valid_form_data() {
@@ -10,13 +14,7 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
 
     // Act
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
-    let response = client
-        .post(format!("http://{}/subscriptions", &test_app.address))
-        .header("Content-Type", "application/x-www-form-urlencoded")
-        .body(body)
-        .send()
-        .await
-        .expect("Failed to execute request.");
+    let response = test_app.post_subscriptions(body.into()).await;
 
     // Assert
     assert_eq!(StatusCode::OK, response.status().as_u16());
@@ -43,13 +41,8 @@ async fn subscribe_returns_a_422_when_data_is_missing() {
     ];
     for (invalid_body, error_message) in test_cases {
         // Act
-        let response = client
-            .post(format!("http://{}/subscriptions", &test_app.address))
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .body(invalid_body)
-            .send()
-            .await
-            .expect("Failed to execute request.");
+        let response = test_app.post_subscriptions(body.into()).await;
+
         // Assert
         assert_eq!(
             StatusCode::UNPROCESSABLE_ENTITY,
@@ -75,13 +68,7 @@ async fn subscribe_returns_a_400_for_invalid_data() {
 
     for (invalid_body, error_message) in test_cases {
         // Act
-        let response = client
-            .post(format!("http://{}/subscriptions", &test_app.address))
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .body(invalid_body)
-            .send()
-            .await
-            .expect("Failed to execute request.");
+        let response = test_app.post_subscriptions(body.into()).await;
         // Assert
         assert_eq!(
             StatusCode::BAD_REQUEST,
