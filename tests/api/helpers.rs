@@ -44,7 +44,6 @@ pub async fn spawn_app() -> TestApp {
     let email_server = MockServer::start().await;
     let configuration = {
         let mut c = get_configuration().expect("Failed to read configuration.");
-        // TODO: Are these still needed?
         c.database.database_name = Uuid::new_v4().to_string();
         c.application.port = 0u16;
         c.email_client.base_url = email_server.uri();

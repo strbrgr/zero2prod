@@ -49,7 +49,25 @@ pub async fn subscribe(
             StatusCode::INTERNAL_SERVER_ERROR,
             "Failed to execute query.",
         ),
+    };
+
+    if state
+        .email_client
+        .send_email(
+            new_subscriber.email,
+            "Welcome!",
+            "Welcome to our newsletter!",
+            "Welcome to our newsletter!",
+        )
+        .await
+        .is_err()
+    {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Failed to execute query.",
+        );
     }
+    (StatusCode::OK, "subscription successful")
 }
 
 #[tracing::instrument(

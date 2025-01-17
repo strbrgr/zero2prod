@@ -18,7 +18,7 @@ use tracing::Level;
 #[derive(Clone)]
 pub struct AppState {
     pub db: PgPool,
-    pub connection_pool: EmailClient,
+    pub email_client: EmailClient,
 }
 
 pub struct Application {
@@ -30,7 +30,7 @@ pub struct Application {
 pub fn router(pool: PgPool, email_client: EmailClient) -> Router {
     let state = AppState {
         db: pool,
-        connection_pool: email_client,
+        email_client,
     };
 
     Router::new()
