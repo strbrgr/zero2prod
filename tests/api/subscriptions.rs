@@ -10,8 +10,6 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
     // Arrange
     let test_app = spawn_app().await;
 
-    let client = reqwest::Client::new();
-
     // Act
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
     let response = test_app.post_subscriptions(body.into()).await;
@@ -33,7 +31,6 @@ async fn subscribe_returns_a_422_when_data_is_missing() {
     // Arrange
     let test_app = spawn_app().await;
 
-    let client = reqwest::Client::new();
     let test_cases = vec![
         ("name=le%20guin", "missing the email"),
         ("email=ursula_le_guin%40gmail.com", "missing the name"),
@@ -41,7 +38,7 @@ async fn subscribe_returns_a_422_when_data_is_missing() {
     ];
     for (invalid_body, error_message) in test_cases {
         // Act
-        let response = test_app.post_subscriptions(body.into()).await;
+        let response = test_app.post_subscriptions(invalid_body.into()).await;
 
         // Assert
         assert_eq!(
@@ -64,11 +61,10 @@ async fn subscribe_returns_a_400_for_invalid_data() {
         ("name=Jenny&email=", "missing the email"),
         ("name=Bob&email=yes@%", "corrupted email"),
     ];
-    let client = reqwest::Client::new();
 
     for (invalid_body, error_message) in test_cases {
         // Act
-        let response = test_app.post_subscriptions(body.into()).await;
+        let response = test_app.post_subscriptions(invalid_body.into()).await;
         // Assert
         assert_eq!(
             StatusCode::BAD_REQUEST,
@@ -78,4 +74,22 @@ async fn subscribe_returns_a_400_for_invalid_data() {
             error_message
         );
     }
+}
+
+#[tokio::test]
+async fn subscribe_sends_a_confirmation_email_for_valid_data() {
+    // Arrange
+    let test_app = spawn_app().await;
+    let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&test_app.email_server)
+        .await;
+
+    // Act
+    test_app.post_subscriptions(body.into()).await;
+    // Assert
 }
